@@ -140,22 +140,22 @@ def borrow_book():
     return jsonify({'message': 'Book borrowed successfully'})
 
 
-@app.route('/return', methods=['POST'])
-def return_book():
-    data = request.json
-    book_id = data.get('book_id')
-    member_id = data.get('member_id')
+# @app.route('/return', methods=['POST'])
+# def return_book():
+#     data = request.json
+#     book_id = data.get('book_id')
+#     member_id = data.get('member_id')
 
     
-    book = mongo.db.books.find_one({'bookID': book_id})
-    member = mongo.db.members.find_one({'member_id': member_id})
+#     book = mongo.db.books.find_one({'bookID': book_id})
+#     member = mongo.db.members.find_one({'member_id': member_id})
 
-    if not book or not member:
-        return jsonify({'error': 'Book or member not found'}), 404
+#     if not book or not member:
+#         return jsonify({'error': 'Book or member not found'}), 404
 
    
 
-    return jsonify({'message': 'Book returned successfully'}) 
+#     return jsonify({'message': 'Book returned successfully'}) 
 def generate_random_id():
     return ''.join(random.choices(string.hexdigits, k=24))    
 @app.route('/books/import', methods=['GET'])
@@ -283,6 +283,33 @@ def lend_book():
 
     return jsonify({'message': 'Book lent successfully'})        
 
+
+@app.route('/listBooks', methods=['POST'])
+def list_books():
+    username = request.form.get('username')
+    user_data = users_collection.find_one({'username': username})
+    # print(user_data)
+    if user_data:
+        books_borrowed = user_data.get('books_borrowed', [])
+        return jsonify(books_borrowed)
+    else:
+        return jsonify([])
+    
+@app.route('/returnBook', methods=['POST'])
+def return_books():
+    username = request.form.get('username')
+    book_id = request.form.get('bookId')
+
+    # Search for the user in the 'Users' collection
+    user = users_collection.find_one({'username': username})
+
+    if user:
+        # Remove the book with matching bookId from the 'borrowed_books' array
+        users_collection.update_one({'username': username}, {'$pull': {'books_borrowed': {'bookId': book_id}}})
+        
+        return jsonify({'message': 'Book returned successfully for user ' + username})
+    else:
+        return jsonify({'message': 'User not found.'})
            
 
 if __name__ == '__main__':
